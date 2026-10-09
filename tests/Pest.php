@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Facility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +48,17 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function enableFacilitySchedule(Facility $facility, array $periods = [['08:00', '17:00']]): void
+{
+    foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day) {
+        foreach ($periods as $period) {
+            $facility->schedules()->create([
+                'day_of_week' => $day,
+                'start_time' => $period[0],
+                'end_time' => $period[1],
+            ]);
+        }
+    }
 }

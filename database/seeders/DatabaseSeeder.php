@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             BjmpRegionalSeeder::class,
+            FacilityScheduleSeeder::class,
         ]);
 
         User::firstOrCreate(

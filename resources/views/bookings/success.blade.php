@@ -21,8 +21,8 @@
                     <span class="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">{{ $booking->status }}</span>
                 </div>
                 <div class="flex items-center gap-3 border-b border-slate-100 py-4">
-                    @if($booking->facility->badge_image_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($booking->facility->badge_image_path) }}" alt="Official badge for {{ $booking->facility->name }}" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1">
+                    @if($booking->facility->badge_url)
+                        <img src="{{ $booking->facility->badge_url }}" alt="Official badge for {{ $booking->facility->name }}" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1" onerror="this.src='{{ asset('images/bjmp-logo.png') }}'; this.alt='BJMP Official Seal';">
                     @else
                         <img src="{{ asset('images/bjmp-logo.png') }}" alt="BJMP Official Seal" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1">
                     @endif
@@ -52,6 +52,8 @@
                 <p class="mt-1 text-xs leading-5 text-slate-500">Present it at the facility entrance after your visit is approved.</p>
             </aside>
         </div>
+
+        @include('bookings.partials.accompanying-visitors', ['booking' => $booking])
 
         <div class="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
             <strong>Next step:</strong> Track your request with reference <span class="font-semibold">{{ $booking->reference_code }}</span>. The facility administrator must approve the visit before check-in.

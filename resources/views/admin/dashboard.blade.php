@@ -9,7 +9,10 @@
             <h1 class="mt-1 text-2xl font-bold text-[#102044]">Booking dashboard</h1>
             <p class="mt-2 text-sm text-slate-600">Review requests and monitor scheduled visits.</p>
         </div>
-        <a href="{{ route('admin.calendar') }}" class="text-sm font-semibold text-[#0A2472] hover:underline">Open visit calendar &rarr;</a>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('admin.visitations.create') }}" class="rounded-md border border-[#0A2472] px-3 py-2 text-sm font-semibold text-[#0A2472] hover:bg-blue-50">Record on-site visitation</a>
+            <a href="{{ route('admin.calendar') }}" class="text-sm font-semibold text-[#0A2472] hover:underline">Open visit calendar &rarr;</a>
+        </div>
     </div>
 
     <section class="mt-6" aria-label="Booking analytics">
@@ -66,6 +69,43 @@
         </div>
     </section>
 
+    <section class="mt-6 rounded-md border border-slate-200 bg-white p-5" aria-labelledby="daily-summary-heading">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h2 id="daily-summary-heading" class="text-base font-semibold text-slate-900">Daily Visitation Summary</h2>
+                <p class="mt-1 text-sm text-slate-600">Date: {{ $summaryDate->format('F j, Y') }}. Counts every person attending, including accompanying visitors.</p>
+            </div>
+            <a href="{{ route('admin.dashboard', ['date' => $summaryDate->format('Y-m-d')]) }}" class="text-xs font-semibold text-[#0A2472] hover:underline">Use this date in the filters</a>
+        </div>
+
+        <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <div class="rounded-md border border-slate-200 p-4">
+                <p class="text-xs font-medium text-slate-500">Total expected visitors</p>
+                <p class="mt-2 text-2xl font-bold text-[#102044]">{{ $dailySummary['total'] }}</p>
+                <p class="mt-1 text-sm text-slate-700">Bookings: <span class="font-semibold text-slate-900">{{ $dailySummary['bookings'] }}</span></p>
+                <p class="mt-1 text-sm text-slate-700">Primary visitors: <span class="font-semibold text-slate-900">{{ $dailySummary['primary_visitors'] }}</span></p>
+                <p class="mt-1 text-sm text-slate-700">Accompanying visitors: <span class="font-semibold text-slate-900">{{ $dailySummary['accompanying_visitors'] }}</span></p>
+            </div>
+            <div class="rounded-md border border-slate-200 p-4">
+                <p class="text-xs font-medium text-slate-500">Sex</p>
+                <p class="mt-2 text-sm text-slate-700">Male: <span class="font-semibold text-slate-900">{{ $dailySummary['sex']['Male'] }}</span></p>
+                <p class="mt-1 text-sm text-slate-700">Female: <span class="font-semibold text-slate-900">{{ $dailySummary['sex']['Female'] }}</span></p>
+                @if($dailySummary['sex']['Unknown'] > 0)
+                    <p class="mt-1 text-sm text-slate-700">Unknown: <span class="font-semibold text-slate-900">{{ $dailySummary['sex']['Unknown'] }}</span></p>
+                @endif
+            </div>
+            <div class="rounded-md border border-slate-200 p-4">
+                <p class="text-xs font-medium text-slate-500">Age group</p>
+                <p class="mt-2 text-sm text-slate-700">Minor: <span class="font-semibold text-slate-900">{{ $dailySummary['age_group']['Minor'] }}</span></p>
+                <p class="mt-1 text-sm text-slate-700">Adult: <span class="font-semibold text-slate-900">{{ $dailySummary['age_group']['Adult'] }}</span></p>
+                <p class="mt-1 text-sm text-slate-700">Senior: <span class="font-semibold text-slate-900">{{ $dailySummary['age_group']['Senior'] }}</span></p>
+                @if($dailySummary['age_group']['Unknown'] > 0)
+                    <p class="mt-1 text-sm text-slate-700">Unknown: <span class="font-semibold text-slate-900">{{ $dailySummary['age_group']['Unknown'] }}</span></p>
+                @endif
+            </div>
+        </div>
+    </section>
+
     <section class="mt-9" aria-labelledby="booking-requests-heading">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -107,6 +147,7 @@
                             <td class="whitespace-nowrap px-4 py-4">
                                 <p class="text-sm font-medium text-slate-900">{{ $booking->visitor_full_name }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $booking->visitor_contact }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Total expected visitors: {{ $booking->accompanying_visitors_count + 1 }}</p>
                             </td>
                             <td class="whitespace-nowrap px-4 py-4">
                                 <p class="text-sm text-slate-800">{{ $booking->pdl_name }}</p>

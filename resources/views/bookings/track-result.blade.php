@@ -34,6 +34,8 @@
             </dl>
         </article>
 
+        @include('bookings.partials.accompanying-visitors', ['booking' => $booking])
+
         @include('bookings.partials.status-history', ['booking' => $booking])
 
         @if($booking->status === 'Approved')

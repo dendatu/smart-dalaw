@@ -18,6 +18,8 @@ function createConsentFacility(): array
         'max_visitors_per_hour' => 20,
     ]);
 
+    enableFacilitySchedule($facility);
+
     return [$facility];
 }
 

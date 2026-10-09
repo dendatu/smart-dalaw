@@ -9,8 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
+    public const SOURCE_ONLINE_BOOKING = 'Online Booking';
+
+    public const SOURCE_ON_SITE_REGISTRATION = 'On-Site Registration';
+
     protected $fillable = [
         'reference_code',
+        'source',
         'facility_id',
         'pdl_name',
         'visitor_full_name',
@@ -70,5 +75,87 @@ class Booking extends Model
         }
 
         return $query->where('facility_id', $user->facility_id ?? 0);
+    }
+
+    /**
+     * Classify an age into a visitation age group. The system stores the visitor's
+     * age (snapshot), so classification uses that stored age directly.
+     */
+    public static function ageGroupForAge(?int $age): string
+    {
+        if ($age === null || $age < 1) {
+            return 'Unknown';
+        }
+
+        if ($age < 18) {
+            return 'Minor';
+        }
+
+        if ($age <= 59) {
+            return 'Adult';
+        }
+
+        return 'Senior';
+    }
+
+    /**
+     * Daily visitation summary for a date, counting every person attending
+     * (primary + accompanying visitors), segmented by sex and age group.
+     *
+     * The summary only covers visitations that were not rejected, so expected
+     * pending and approved bookings for the date are included while rejected
+     * ones are excluded. Bookings are reported separately from the people
+     * attending so one appointment with several visitors is not counted as
+     * several bookings.
+     *
+     * @return array<string, mixed>
+     */
+    public static function dailyVisitationSummaryFor(mixed $date, ?User $user = null): array
+    {
+        $bookings = Booking::visibleToUser($user)
+            ->with('accompanyingVisitors')
+            ->whereDate('visit_date', $date)
+            ->where('status', '!=', 'Rejected')
+            ->get();
+
+        $summary = [
+            'total' => 0,
+            'bookings' => 0,
+            'primary_visitors' => 0,
+            'accompanying_visitors' => 0,
+            'sex' => ['Male' => 0, 'Female' => 0, 'Unknown' => 0],
+            'age_group' => ['Minor' => 0, 'Adult' => 0, 'Senior' => 0, 'Unknown' => 0],
+        ];
+
+        foreach ($bookings as $booking) {
+            $summary['bookings']++;
+            $summary['primary_visitors']++;
+            $summary = static::countVisitorInSummary($summary, $booking->visitor_sex, $booking->visitor_age);
+
+            foreach ($booking->accompanyingVisitors as $visitor) {
+                $summary['accompanying_visitors']++;
+                $summary = static::countVisitorInSummary($summary, $visitor->sex, $visitor->age);
+            }
+        }
+
+        return $summary;
+    }
+
+    private static function countVisitorInSummary(array $summary, ?string $sex, ?int $age): array
+    {
+        $sexKey = ($sex === 'Male' || $sex === 'Female') ? $sex : 'Unknown';
+        $ageGroup = static::ageGroupForAge($age);
+
+        $sexCounts = $summary['sex'];
+        $ageCounts = $summary['age_group'];
+
+        $sexCounts[$sexKey]++;
+        $ageCounts[$ageGroup]++;
+
+        $summary['sex'] = $sexCounts;
+        $summary['age_group'] = $ageCounts;
+        $summary['total']++;
+
+        return $summary;
     }
 }

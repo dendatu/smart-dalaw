@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Facility;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,19 +34,59 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        $query = Booking::visibleToUser($request->user())->with(['facility']);
+        $query = Booking::visibleToUser($request->user())
+            ->with(['facility'])
+            ->withCount('accompanyingVisitors');
 
-        if ($request->has('status') && $request->status !== '') {
-            $query->where('status', $request->status);
+        $status = $request->query('status');
+
+        if (is_string($status) && $status !== '') {
+            $query->where('status', $status);
         }
 
-        if ($request->has('date') && $request->date !== '') {
-            $query->whereDate('visit_date', $request->date);
+        $requestedDate = $this->resolveRequestedDate($request->query('date'));
+
+        if ($requestedDate !== null) {
+            $query->whereDate('visit_date', $requestedDate);
         }
 
         $bookings = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        return view('admin.dashboard', compact('analytics', 'bookings'));
+        $summaryDate = $this->resolveSummaryDate($request->query('date'));
+        $dailySummary = Booking::dailyVisitationSummaryFor($summaryDate, $request->user());
+
+        return view('admin.dashboard', compact('analytics', 'bookings', 'dailySummary', 'summaryDate'));
+    }
+
+    /**
+     * Normalize the date filter from the query string. Missing, empty, or
+     * unparseable values return null so callers can apply their default
+     * instead of failing on a null/invalid date.
+     */
+    private function resolveRequestedDate(mixed $date): ?string
+    {
+        if (! is_string($date) || trim($date) === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($date)->toDateString();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Resolve the date used for the daily summary, defaulting to today when
+     * the date filter is missing, empty, or invalid.
+     */
+    private function resolveSummaryDate(mixed $date): CarbonImmutable
+    {
+        $requestedDate = $this->resolveRequestedDate($date);
+
+        return $requestedDate !== null
+            ? CarbonImmutable::parse($requestedDate)
+            : CarbonImmutable::today();
     }
 
     public function approve(Request $request, Booking $booking): RedirectResponse

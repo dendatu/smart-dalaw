@@ -16,6 +16,8 @@ test('hourly capacity is checked per selected slot and prevents overbooking', fu
         'max_visitors_per_hour' => 1,
     ]);
 
+    enableFacilitySchedule($facility);
+
     Booking::create([
         'reference_code' => 'BJMP-CAPACITY',
         'facility_id' => $facility->id,

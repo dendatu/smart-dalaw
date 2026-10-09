@@ -2,7 +2,6 @@
 
 use App\Models\Booking;
 use App\Models\Facility;
-use App\Models\Pdl;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -37,10 +36,14 @@ function createAdminManagementBooking(Facility $facility, array $attributes = []
 
 function createAdminManagementFacility(int $maxVisitorsPerHour = 5): Facility
 {
-    return Facility::create([
+    $facility = Facility::create([
         'name' => 'Test City Jail',
         'max_visitors_per_hour' => $maxVisitorsPerHour,
     ]);
+
+    enableFacilitySchedule($facility);
+
+    return $facility;
 }
 
 test('admin dashboard summarizes booking activity', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Facility;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -58,6 +59,19 @@ class StoreBookingRequest extends FormRequest
             if ($user?->isFacilityAdmin()
                 && (int) $this->input('facility_id') !== (int) $user->facility_id) {
                 $validator->errors()->add('facility_id', 'This account can only access its assigned facility.');
+            }
+
+            if ($validator->errors()->has('visit_date')) {
+                return;
+            }
+
+            $facility = Facility::find($this->input('facility_id'));
+            $visitDate = $this->input('visit_date');
+            $timeSlot = $this->input('time_slot');
+
+            if ($facility && $visitDate && $timeSlot
+                && $facility->isTimeSlotAvailableOnDate($visitDate, $timeSlot) === false) {
+                $validator->errors()->add('time_slot', 'The selected time is outside the facility\'s configured visitation schedule.');
             }
         }];
     }

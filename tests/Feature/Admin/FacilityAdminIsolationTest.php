@@ -2,7 +2,6 @@
 
 use App\Models\Booking;
 use App\Models\Facility;
-use App\Models\Pdl;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -14,10 +13,14 @@ beforeEach(function () {
 
 function createIsolatedFacility(string $name): Facility
 {
-    return Facility::create([
+    $facility = Facility::create([
         'name' => $name,
         'max_visitors_per_hour' => 20,
     ]);
+
+    enableFacilitySchedule($facility);
+
+    return $facility;
 }
 
 function createIsolatedBooking(Facility $facility, string $referenceCode): Booking

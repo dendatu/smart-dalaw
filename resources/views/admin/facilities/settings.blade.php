@@ -13,8 +13,8 @@
         @forelse($facilities as $facility)
             <article class="grid gap-6 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(18rem,1fr)_minmax(18rem,1fr)]">
                 <div class="flex min-w-0 items-start gap-3">
-                    @if($facility->badge_image_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($facility->badge_image_path) }}" alt="Official badge for {{ $facility->name }}" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1">
+                    @if($facility->badge_url)
+                        <img src="{{ $facility->badge_url }}" alt="Official badge for {{ $facility->name }}" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1" onerror="this.src='{{ asset('images/bjmp-logo.png') }}'; this.alt='BJMP Official Seal';">
                     @else
                         <img src="{{ asset('images/bjmp-logo.png') }}" alt="BJMP Official Seal" class="h-14 w-14 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1">
                     @endif
@@ -22,6 +22,7 @@
                         <h2 class="font-semibold text-slate-900">{{ $facility->name }}</h2>
                         <p class="mt-1 text-xs text-slate-500">{{ $facility->regional_office ?: 'Regional office not set' }}</p>
                         <p class="text-xs text-slate-500">{{ $facility->jail_unit_name ?: 'Jail unit not set' }}</p>
+                        <a href="{{ route('admin.facilities.schedule.edit', $facility) }}" class="mt-2 inline-block text-sm font-semibold text-[#0A2472] hover:underline">Manage visitation schedule &rarr;</a>
                     </div>
                 </div>
 

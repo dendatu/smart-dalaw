@@ -59,17 +59,16 @@
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div class="sm:col-span-2">
                                 <label for="facility_id" class="mb-2 block text-sm font-semibold text-slate-800">Jail facility <span class="text-red-600">*</span></label>
-                                <input type="text" id="facility_search" placeholder="Search facilities..." class="mb-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
                                 <select id="facility_id" name="facility_id" required class="select select-bordered w-full rounded-lg bg-base-100 text-sm focus:outline-none">
                                     <option value="">Select a jail facility</option>
                                     @foreach($facilities as $facility)
-                                        <option value="{{ $facility->id }}" data-badge-url="{{ $facility->badge_image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($facility->badge_image_path) : '' }}" data-regional-office="{{ $facility->regional_office }}" data-jail-unit="{{ $facility->jail_unit_name }}" data-name="{{ $facility->name }}" @selected(old('facility_id') == $facility->id)>{{ $facility->name }}</option>
+                                        <option value="{{ $facility->id }}" data-badge-url="{{ $facility->badge_url ?? '' }}" data-regional-office="{{ $facility->regional_office }}" data-jail-unit="{{ $facility->jail_unit_name }}" @selected(old('facility_id') == $facility->id)>{{ $facility->name }}</option>
                                     @endforeach
                                 </select>
                                 <p class="mt-1.5 text-xs text-slate-500">Choose the facility where the person you wish to visit is held.</p>
                                 <div id="facility-brand-panel" class="mt-4 hidden items-center gap-4 rounded-lg border border-base-300 bg-base-200 p-4" aria-live="polite">
                                     <img id="facility-badge-fallback" src="{{ asset('images/bjmp-logo.png') }}" alt="BJMP Official Seal" class="h-16 w-16 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1">
-                                    <img id="facility-badge-image" class="hidden h-16 w-16 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1" alt="Official facility badge">
+                                    <img id="facility-badge-image" class="hidden h-16 w-16 shrink-0 rounded-full border border-base-300 bg-base-100 object-contain p-1" alt="Official facility badge" onerror="this.classList.add('hidden'); document.getElementById('facility-badge-fallback').classList.remove('hidden');">
                                     <div class="min-w-0">
                                         <p id="facility-brand-name" class="font-semibold text-base-content"></p>
                                         <p id="facility-brand-regional" class="mt-1 text-xs text-base-content/70"></p>
@@ -88,13 +87,11 @@
                                 <label for="time_slot" class="mb-2 block text-sm font-semibold text-slate-800">Time slot <span class="text-red-600">*</span></label>
                                 <select id="time_slot" name="time_slot" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
                                     <option value="">Select a time slot</option>
-                                    <option value="8:00 AM - 9:00 AM" @selected(old('time_slot') === '8:00 AM - 9:00 AM')>8:00 AM - 9:00 AM</option>
-                                    <option value="9:00 AM - 10:00 AM" @selected(old('time_slot') === '9:00 AM - 10:00 AM')>9:00 AM - 10:00 AM</option>
-                                    <option value="10:00 AM - 11:00 AM" @selected(old('time_slot') === '10:00 AM - 11:00 AM')>10:00 AM - 11:00 AM</option>
-                                    <option value="1:00 PM - 2:00 PM" @selected(old('time_slot') === '1:00 PM - 2:00 PM')>1:00 PM - 2:00 PM</option>
-                                    <option value="2:00 PM - 3:00 PM" @selected(old('time_slot') === '2:00 PM - 3:00 PM')>2:00 PM - 3:00 PM</option>
-                                    <option value="3:00 PM - 4:00 PM" @selected(old('time_slot') === '3:00 PM - 4:00 PM')>3:00 PM - 4:00 PM</option>
+                                    @if(old('time_slot'))
+                                        <option value="{{ old('time_slot') }}" selected>{{ old('time_slot') }}</option>
+                                    @endif
                                 </select>
+                                <p class="mt-1.5 text-xs text-slate-500">Available times follow the selected facility's visitation schedule.</p>
                             </div>
                         </div>
 
@@ -140,8 +137,8 @@
                                 <label for="visitor_sex" class="mb-2 block text-sm font-semibold text-slate-800">Sex <span class="text-red-600">*</span></label>
                                 <select id="visitor_sex" name="visitor_sex" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
                                     <option value="">Select sex</option>
-                                    <option value="Male" @selected(old('visitor_sex') === 'Male')">Male</option>
-                                    <option value="Female" @selected(old('visitor_sex') === 'Female')">Female</option>
+                                    <option value="Male" @selected(old('visitor_sex') === 'Male')>Male</option>
+                                    <option value="Female" @selected(old('visitor_sex') === 'Female')>Female</option>
                                 </select>
                             </div>
                             <div>
@@ -249,6 +246,8 @@
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Date &amp; time</dt><dd id="review_schedule" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Person you are visiting</dt><dd id="review_pdl" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Visitor</dt><dd id="review_visitor" class="text-sm font-medium text-slate-900"></dd></div>
+                            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Accompanying visitors</dt><dd id="review_accompanying" class="text-sm font-medium text-slate-900">None</dd></div>
+                            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Total expected visitors</dt><dd id="review_total_visitors" class="text-sm font-medium text-slate-900">1</dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Valid ID</dt><dd id="review_id" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Agreements</dt><dd class="text-sm font-medium text-slate-900">Terms and Privacy Notice acknowledged</dd></div>
                         </dl>
@@ -281,7 +280,6 @@
         const bookingSteps = [...document.querySelectorAll('[data-booking-step]')];
         const bookingIndicators = [...document.querySelectorAll('[data-step-indicator]')];
         const facilitySelect = document.getElementById('facility_id');
-        const facilitySearch = document.getElementById('facility_search');
         const visitDateInput = document.getElementById('visit_date');
         const timeSlotSelect = document.getElementById('time_slot');
         const availabilityPanel = document.getElementById('slotAvailability');
@@ -293,6 +291,7 @@
         const addAccompanyingVisitorBtn = document.getElementById('add-accompanying-visitor');
         let activeStep = Number(document.getElementById('booking-errors')?.dataset.step || 1);
         let accompanyingVisitorCount = 0;
+        const oldAccompanyingVisitors = @json(old('accompanying_visitors', []));
 
         function showBookingStep(step) {
             activeStep = step;
@@ -365,6 +364,13 @@
             document.getElementById('review_schedule').textContent = `${visitDateInput.value} · ${selectedLabel(timeSlotSelect)}`;
             document.getElementById('review_pdl').textContent = document.getElementById('pdl_name').value;
             document.getElementById('review_visitor').textContent = document.getElementById('visitor_full_name').value;
+            const reviewCompanions = [...accompanyingVisitorsContainer.querySelectorAll('[data-accompanying-index]')]
+                .map((entry) => entry.querySelector('input[name$="[full_name]"]')?.value.trim())
+                .filter((name) => name);
+            document.getElementById('review_accompanying').textContent = reviewCompanions.length > 0
+                ? reviewCompanions.join(', ')
+                : 'None';
+            document.getElementById('review_total_visitors').textContent = String(reviewCompanions.length + 1);
             document.getElementById('review_id').textContent = `${selectedLabel(document.getElementById('visitor_id_type'))} · ${document.getElementById('visitor_id_number').value}`;
         }
 
@@ -380,7 +386,8 @@
 
         facilitySelect.addEventListener('change', () => {
             updateFacilityBrand();
-            checkAvailability();
+            resetTimeSlotSelection();
+            loadTimeSlots();
         });
 
         async function checkAvailability() {
@@ -410,25 +417,75 @@
                 availabilityMessage.className = availability.available ? 'text-sm text-emerald-800' : 'text-sm text-red-800';
                 availabilityMessage.textContent = availability.available
                     ? `This slot is available. ${availability.current_bookings} of ${availability.max_visitors_per_hour} visitors booked.`
-                    : `This slot is fully booked. ${availability.current_bookings} of ${availability.max_visitors_per_hour} visitors booked.`;
+                    : availability.reason === 'outside_schedule'
+                        ? 'This time is outside the selected facility\'s visitation schedule.'
+                        : `This slot is fully booked. ${availability.current_bookings} of ${availability.max_visitors_per_hour} visitors booked.`;
             } catch {
                 availabilityPanel.classList.add('hidden');
             }
         }
 
-        visitDateInput.addEventListener('change', checkAvailability);
-        timeSlotSelect.addEventListener('change', checkAvailability);
+        function resetTimeSlotSelection() {
+            timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+            availabilityPanel.classList.add('hidden');
+        }
 
-        // Real-time facility search
-        facilitySearch.addEventListener('input', () => {
-            const searchTerm = facilitySearch.value.toLowerCase();
-            const options = facilitySelect.options;
-            for (let i = 1; i < options.length; i++) {
-                const option = options[i];
-                const facilityName = option.dataset.name || option.text;
-                option.style.display = facilityName.toLowerCase().includes(searchTerm) ? '' : 'none';
+        async function loadTimeSlots({ preserveSelection = false } = {}) {
+            const requestedFacility = facilitySelect.value;
+            const requestedDate = visitDateInput.value;
+
+            if (!requestedFacility || !requestedDate) {
+                resetTimeSlotSelection();
+                return;
             }
+
+            try {
+                const url = '{{ route('api.facility-slots', ':facility') }}'.replace(':facility', requestedFacility);
+                const response = await fetch(url + '?date=' + encodeURIComponent(requestedDate));
+                const data = await response.json();
+
+                if (facilitySelect.value !== requestedFacility || visitDateInput.value !== requestedDate) {
+                    return;
+                }
+
+                const currentValue = preserveSelection ? timeSlotSelect.value : '';
+
+                timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+
+                (data.slots || []).forEach((slot) => {
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    timeSlotSelect.appendChild(option);
+                });
+
+                const stillAvailable = currentValue
+                    && Array.from(timeSlotSelect.options).some((option) => option.value === currentValue);
+
+                if (stillAvailable) {
+                    timeSlotSelect.value = currentValue;
+                }
+
+                if ((data.slots || []).length === 0) {
+                    // A date without configured visitation hours must not remain selected.
+                    visitDateInput.value = '';
+                    timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+                    availabilityPanel.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3';
+                    availabilityMessage.className = 'text-sm text-amber-800';
+                    availabilityMessage.textContent = 'No visitation hours are available on this date for the selected facility.';
+                } else if (!stillAvailable) {
+                    availabilityPanel.classList.add('hidden');
+                }
+            } catch {
+                resetTimeSlotSelection();
+            }
+        }
+
+        visitDateInput.addEventListener('change', () => {
+            resetTimeSlotSelection();
+            loadTimeSlots();
         });
+        timeSlotSelect.addEventListener('change', checkAvailability);
 
         // Accompanying visitors functionality
         function createAccompanyingVisitorForm(index) {
@@ -503,6 +560,30 @@
             accompanyingVisitorCount++;
         });
 
+        // Restore accompanying visitor entries after a validation redirect so
+        // the submitted data is not silently dropped.
+        const oldAccompanyingEntries = Array.isArray(oldAccompanyingVisitors)
+            ? oldAccompanyingVisitors
+            : (oldAccompanyingVisitors && typeof oldAccompanyingVisitors === 'object' ? Object.values(oldAccompanyingVisitors) : []);
+
+        if (oldAccompanyingEntries.length > 0) {
+            oldAccompanyingEntries.forEach((visitor, index) => {
+                if (!visitor || typeof visitor !== 'object') {
+                    return;
+                }
+
+                const form = createAccompanyingVisitorForm(index);
+                ['full_name', 'age', 'sex', 'id_type', 'id_number', 'relationship_to_pdl'].forEach((field) => {
+                    const input = form.querySelector(`[name="accompanying_visitors[${index}][${field}]"`);
+                    if (input && visitor[field] !== undefined) {
+                        input.value = visitor[field];
+                    }
+                });
+                accompanyingVisitorsContainer.appendChild(form);
+                accompanyingVisitorCount = index + 1;
+            });
+        }
+
         accompanyingVisitorsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-accompanying-visitor')) {
                 const index = e.target.dataset.index;
@@ -510,6 +591,15 @@
                 if (form) {
                     form.remove();
                 }
+                if (activeStep === 3) {
+                    updateBookingReview();
+                }
+            }
+        });
+
+        accompanyingVisitorsContainer.addEventListener('input', () => {
+            if (activeStep === 3) {
+                updateBookingReview();
             }
         });
 
@@ -518,6 +608,10 @@
         }
 
         showBookingStep(activeStep);
-        checkAvailability();
+        loadTimeSlots({ preserveSelection: true }).then(() => {
+            if (timeSlotSelect.value) {
+                checkAvailability();
+            }
+        });
     </script>
 @endpush
