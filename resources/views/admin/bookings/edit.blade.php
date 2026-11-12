@@ -96,6 +96,20 @@
                 </div>
             </div>
 
+            <fieldset>
+                <legend class="mb-2 block text-sm font-semibold text-slate-800">Priority declaration</legend>
+                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                    <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                        <input type="checkbox" id="visitor_is_pwd" name="visitor_is_pwd" value="1" @checked(old('visitor_is_pwd', $booking->visitor_is_pwd)) class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                        <span>Person with Disability (PWD)</span>
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                        <input type="checkbox" id="visitor_is_pregnant" name="visitor_is_pregnant" value="1" @checked(old('visitor_is_pregnant', $booking->visitor_is_pregnant)) class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                        <span>Pregnant <span class="text-slate-500">(female only)</span></span>
+                    </label>
+                </div>
+            </fieldset>
+
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                     <label for="visitor_id_type" class="mb-2 block text-sm font-semibold text-slate-800">Type of valid ID</label>
@@ -141,9 +155,19 @@
                                     <label class="mb-1.5 block text-xs font-semibold text-slate-700">Sex</label>
                                     <select name="accompanying_visitors[{{ $index }}][sex]" required class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
                                         <option value="">Select sex</option>
-                                        <option value="Male" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Male')">Male</option>
-                                        <option value="Female" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Female')">Female</option>
+                                        <option value="Male" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Male')>Male</option>
+                                        <option value="Female" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Female')>Female</option>
                                     </select>
+                                </div>
+                                <div class="flex flex-wrap gap-x-5 gap-y-2 sm:col-span-2">
+                                    <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                                        <input type="checkbox" name="accompanying_visitors[{{ $index }}][is_pwd]" value="1" @checked(session()->hasOldInput() ? old("accompanying_visitors.{$index}.is_pwd") : $visitor->is_pwd) class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                                        <span>Person with Disability (PWD)</span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                                        <input type="checkbox" name="accompanying_visitors[{{ $index }}][is_pregnant]" value="1" @checked(session()->hasOldInput() ? old("accompanying_visitors.{$index}.is_pregnant") : $visitor->is_pregnant) class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                                        <span>Pregnant <span class="text-slate-500">(female only)</span></span>
+                                    </label>
                                 </div>
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold text-slate-700">Type of valid ID</label>
@@ -200,6 +224,16 @@
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                         </select>
+                    </div>
+                    <div class="flex flex-wrap gap-x-5 gap-y-2 sm:col-span-2">
+                        <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                            <input type="checkbox" name="accompanying_visitors[${index}][is_pwd]" value="1" class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                            <span>Person with Disability (PWD)</span>
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                            <input type="checkbox" name="accompanying_visitors[${index}][is_pregnant]" value="1" class="h-4 w-4 rounded border-slate-300 text-[#0A2472] focus:ring-blue-100">
+                            <span>Pregnant <span class="text-slate-500">(female only)</span></span>
+                        </label>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-xs font-semibold text-slate-700">Type of valid ID</label>

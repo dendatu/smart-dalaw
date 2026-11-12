@@ -178,6 +178,20 @@
                                 <label for="visitor_age" class="mb-2 block text-sm font-semibold text-slate-800">Age <span class="text-red-600">*</span></label>
                                 <input type="number" id="visitor_age" name="visitor_age" value="{{ old('visitor_age') }}" required min="1" max="120" placeholder="25" class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
                             </div>
+                            <fieldset class="sm:col-span-2">
+                                <legend class="mb-2 block text-sm font-semibold text-slate-800">Priority declaration <span class="font-normal text-slate-500">(check all that apply)</span></legend>
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-800">
+                                        <input type="checkbox" id="visitor_is_pwd" name="visitor_is_pwd" value="1" @checked(old('visitor_is_pwd')) class="checkbox checkbox-primary checkbox-sm mt-0.5">
+                                        <span>I am a Person with Disability (PWD)</span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-800">
+                                        <input type="checkbox" id="visitor_is_pregnant" name="visitor_is_pregnant" value="1" @checked(old('visitor_is_pregnant')) class="checkbox checkbox-primary checkbox-sm mt-0.5">
+                                        <span>I am pregnant <span class="text-slate-500">(female visitors only)</span></span>
+                                    </label>
+                                </div>
+                                <p class="mt-1.5 text-xs text-slate-500">This helps facility staff prepare priority assistance for your visit.</p>
+                            </fieldset>
                             <div>
                                 <label for="visitor_id_type" class="mb-2 block text-sm font-semibold text-slate-800">Type of valid ID <span class="text-red-600">*</span></label>
                                 <select id="visitor_id_type" name="visitor_id_type" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
@@ -279,6 +293,8 @@
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Date &amp; time</dt><dd id="review_schedule" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Person you are visiting</dt><dd id="review_pdl" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Visitor</dt><dd id="review_visitor" class="text-sm font-medium text-slate-900"></dd></div>
+                            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Priority declaration</dt><dd id="review_priority" class="text-sm font-medium text-slate-900"></dd></div>
+                            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Accompanying visitors</dt><dd id="review_companions" class="text-sm font-medium text-slate-900 sm:text-right"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Valid ID</dt><dd id="review_id" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Agreements</dt><dd class="text-sm font-medium text-slate-900">Terms and Privacy Notice acknowledged</dd></div>
                         </dl>
@@ -319,6 +335,7 @@
         const VISITING_SCHEDULE = @json($visitingSchedule);
         const MIN_VISIT_DATE = @json($minVisitDate); // earliest bookable date (tomorrow)
         const PREVIOUS_TIME_SLOT = @json(old('time_slot'));
+        const PREVIOUS_ACCOMPANYING_VISITORS = @json(array_values(old('accompanying_visitors', [])));
         const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         const bookingForm = document.getElementById('bookingForm');
@@ -411,6 +428,16 @@
             document.getElementById('review_schedule').textContent = `${visitDateInput.value} · ${selectedLabel(timeSlotSelect)}`;
             document.getElementById('review_pdl').textContent = document.getElementById('pdl_name').value;
             document.getElementById('review_visitor').textContent = document.getElementById('visitor_full_name').value;
+            document.getElementById('review_priority').textContent = [
+                document.getElementById('visitor_is_pwd').checked ? 'Person with Disability (PWD)' : null,
+                document.getElementById('visitor_is_pregnant').checked ? 'Pregnant' : null,
+            ].filter(Boolean).join(', ') || 'None';
+            const companions = [...accompanyingVisitorsContainer.querySelectorAll('[data-accompanying-index]')].map((row) => {
+                const field = (name) => row.querySelector(`[name$="[${name}]"]`);
+                const flags = [field('is_pwd').checked ? 'PWD' : null, field('is_pregnant').checked ? 'Pregnant' : null].filter(Boolean);
+                return field('full_name').value + (flags.length ? ` (${flags.join(', ')})` : '');
+            });
+            document.getElementById('review_companions').textContent = companions.join('; ') || 'None';
             document.getElementById('review_id').textContent = `${selectedLabel(document.getElementById('visitor_id_type'))} · ${document.getElementById('visitor_id_number').value}`;
         }
 
@@ -583,6 +610,16 @@
                             <option value="Female">Female</option>
                         </select>
                     </div>
+                    <div class="flex flex-wrap gap-x-5 gap-y-2 sm:col-span-2">
+                        <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                            <input type="checkbox" name="accompanying_visitors[${index}][is_pwd]" value="1" class="checkbox checkbox-primary checkbox-sm">
+                            <span>Person with Disability (PWD)</span>
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                            <input type="checkbox" name="accompanying_visitors[${index}][is_pregnant]" value="1" class="checkbox checkbox-primary checkbox-sm">
+                            <span>Pregnant <span class="text-slate-500">(female only)</span></span>
+                        </label>
+                    </div>
                     <div>
                         <label class="mb-1.5 block text-xs font-semibold text-slate-700">Type of valid ID <span class="text-red-600">*</span></label>
                         <select name="accompanying_visitors[${index}][id_type]" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
@@ -623,11 +660,41 @@
             return div;
         }
 
-        addAccompanyingVisitorBtn.addEventListener('click', () => {
+        function syncPregnancyCheckbox(sexSelect, pregnantCheckbox) {
+            const isMale = sexSelect.value === 'Male';
+            pregnantCheckbox.disabled = isMale;
+            if (isMale) {
+                pregnantCheckbox.checked = false;
+            }
+        }
+
+        function addAccompanyingVisitor(values = {}) {
             const form = createAccompanyingVisitorForm(accompanyingVisitorCount);
+            form.querySelectorAll('[name^="accompanying_visitors["]').forEach((input) => {
+                const key = input.name.match(/\[(\w+)\]$/)[1];
+                if (input.type === 'checkbox') {
+                    input.checked = ['1', 1, true, 'on'].includes(values[key]);
+                } else if (values[key] !== undefined && values[key] !== null) {
+                    input.value = values[key];
+                }
+            });
+            syncPregnancyCheckbox(form.querySelector('[name$="[sex]"]'), form.querySelector('[name$="[is_pregnant]"]'));
             accompanyingVisitorsContainer.appendChild(form);
             accompanyingVisitorCount++;
+        }
+
+        addAccompanyingVisitorBtn.addEventListener('click', () => addAccompanyingVisitor());
+
+        accompanyingVisitorsContainer.addEventListener('change', (e) => {
+            if (e.target.matches('[name$="[sex]"]')) {
+                const row = e.target.closest('[data-accompanying-index]');
+                syncPregnancyCheckbox(e.target, row.querySelector('[name$="[is_pregnant]"]'));
+            }
         });
+
+        const visitorSexSelect = document.getElementById('visitor_sex');
+        const visitorPregnantCheckbox = document.getElementById('visitor_is_pregnant');
+        visitorSexSelect.addEventListener('change', () => syncPregnancyCheckbox(visitorSexSelect, visitorPregnantCheckbox));
 
         accompanyingVisitorsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-accompanying-visitor')) {
@@ -656,6 +723,9 @@
         if (facilitySelect.value) {
             updateFacilityBrand();
         }
+
+        PREVIOUS_ACCOMPANYING_VISITORS.forEach((visitor) => addAccompanyingVisitor(visitor));
+        syncPregnancyCheckbox(visitorSexSelect, visitorPregnantCheckbox);
 
         applyDateRules(PREVIOUS_TIME_SLOT || '');
         showBookingStep(activeStep);

@@ -38,7 +38,7 @@
                 </div>
                 <dl class="grid gap-x-8 sm:grid-cols-2">
                     <div class="border-b border-slate-100 py-4"><dt class="text-xs text-slate-500">Person you are visiting</dt><dd class="mt-1 text-sm font-medium text-slate-900">{{ $booking->pdl_name }}</dd></div>
-                    <div class="border-b border-slate-100 py-4"><dt class="text-xs text-slate-500">Visitor</dt><dd class="mt-1 text-sm font-medium text-slate-900">{{ $booking->visitor_full_name }}</dd></div>
+                    <div class="border-b border-slate-100 py-4"><dt class="text-xs text-slate-500">Visitor</dt><dd class="mt-1 flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">{{ $booking->visitor_full_name }} @include('bookings.partials.priority-badges', ['isPwd' => $booking->visitor_is_pwd, 'isPregnant' => $booking->visitor_is_pregnant])</dd></div>
                     <div class="border-b border-slate-100 py-4"><dt class="text-xs text-slate-500">Date &amp; time</dt><dd class="mt-1 text-sm font-medium text-slate-900">{{ $booking->visit_date->format('M d, Y') }} · {{ $booking->time_slot }}</dd></div>
                 </dl>
 
@@ -48,7 +48,7 @@
                         <dd class="mt-2 space-y-2">
                             @foreach($booking->accompanyingVisitors as $visitor)
                                 <div class="rounded-md bg-slate-50 p-3 text-sm">
-                                    <p class="font-medium text-slate-900">{{ $visitor->full_name }}</p>
+                                    <p class="flex flex-wrap items-center gap-1.5 font-medium text-slate-900">{{ $visitor->full_name }} @include('bookings.partials.priority-badges', ['isPwd' => $visitor->is_pwd, 'isPregnant' => $visitor->is_pregnant])</p>
                                     <p class="mt-1 text-xs text-slate-600">{{ $visitor->age }} years old · {{ $visitor->sex }} · {{ $visitor->relationship_to_pdl }}</p>
                                 </div>
                             @endforeach

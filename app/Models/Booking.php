@@ -16,6 +16,8 @@ class Booking extends Model
         'visitor_full_name',
         'visitor_sex',
         'visitor_age',
+        'visitor_is_pwd',
+        'visitor_is_pregnant',
         'visitor_email',
         'visitor_contact',
         'visitor_id_type',
@@ -35,6 +37,8 @@ class Booking extends Model
     protected $casts = [
         'visit_date' => 'date',
         'visitor_age' => 'integer',
+        'visitor_is_pwd' => 'boolean',
+        'visitor_is_pregnant' => 'boolean',
         'terms_accepted' => 'boolean',
         'terms_accepted_at' => 'datetime',
         'privacy_consent' => 'boolean',
