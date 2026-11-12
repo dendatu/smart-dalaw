@@ -22,6 +22,7 @@
                         <input type="date" id="to" name="to" value="{{ $summary['to'] }}" min="{{ $summary['from'] }}" required class="min-h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <button type="submit" class="min-h-10 rounded-md bg-[#0A2472] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071D54]">Generate Report</button>
+                    <button type="submit" formaction="{{ route('admin.daily-summary.export') }}" class="min-h-10 rounded-md border border-[#0A2472] bg-white px-4 py-2 text-sm font-semibold text-[#0A2472] hover:bg-blue-50">Download CSV</button>
                 </form>
                 <div class="flex flex-wrap gap-3 text-xs font-semibold text-[#0A2472]">
                     <a href="{{ route('admin.daily-summary', ['from' => today()->toDateString(), 'to' => today()->toDateString()]) }}" class="hover:underline">Today</a>
