@@ -11,13 +11,43 @@
                 <h1 class="mt-1 text-2xl font-bold text-[#102044]">Daily Visitation Summary</h1>
                 <p class="mt-2 text-sm text-slate-600">View visitor statistics grouped by sex, age category, and priority status (PWD / pregnant).</p>
             </div>
-            <form action="{{ route('admin.daily-summary') }}" method="GET" class="flex items-center gap-2">
-                <input type="date" name="date" value="{{ $summary['date'] }}" class="min-h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
-                <button type="submit" class="min-h-10 rounded-md bg-[#0A2472] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071D54]">View Date</button>
-            </form>
+            <div class="flex flex-col gap-2 sm:items-end">
+                <form action="{{ route('admin.daily-summary') }}" method="GET" class="flex flex-wrap items-end gap-2">
+                    <div>
+                        <label for="from" class="mb-1 block text-xs font-semibold text-slate-600">From</label>
+                        <input type="date" id="from" name="from" value="{{ $summary['from'] }}" required class="min-h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    </div>
+                    <div>
+                        <label for="to" class="mb-1 block text-xs font-semibold text-slate-600">To</label>
+                        <input type="date" id="to" name="to" value="{{ $summary['to'] }}" min="{{ $summary['from'] }}" required class="min-h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    </div>
+                    <button type="submit" class="min-h-10 rounded-md bg-[#0A2472] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071D54]">Generate Report</button>
+                </form>
+                <div class="flex flex-wrap gap-3 text-xs font-semibold text-[#0A2472]">
+                    <a href="{{ route('admin.daily-summary', ['from' => today()->toDateString(), 'to' => today()->toDateString()]) }}" class="hover:underline">Today</a>
+                    <a href="{{ route('admin.daily-summary', ['from' => today()->subDays(6)->toDateString(), 'to' => today()->toDateString()]) }}" class="hover:underline">Last 7 days</a>
+                    <a href="{{ route('admin.daily-summary', ['from' => today()->startOfMonth()->toDateString(), 'to' => today()->endOfMonth()->toDateString()]) }}" class="hover:underline">This month</a>
+                    <a href="{{ route('admin.daily-summary', ['from' => today()->subMonthNoOverflow()->startOfMonth()->toDateString(), 'to' => today()->subMonthNoOverflow()->endOfMonth()->toDateString()]) }}" class="hover:underline">Last month</a>
+                </div>
+            </div>
         </div>
 
-        <section class="mt-6" aria-label="Overall statistics">
+        @php
+            $isRange = $summary['from'] !== $summary['to'];
+            $rangeLabel = \Carbon\Carbon::parse($summary['from'])->format('F d, Y').($isRange ? ' – '.\Carbon\Carbon::parse($summary['to'])->format('F d, Y') : '');
+        @endphp
+
+        @if($errors->any())
+            <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                @foreach($errors->all() as $error)
+                    <p>{{ $error }}</p>
+                @endforeach
+            </div>
+        @endif
+
+        <p class="mt-4 text-sm font-semibold text-slate-700">Report period: {{ $rangeLabel }}</p>
+
+        <section class="mt-4" aria-label="Overall statistics">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <article class="rounded-md border border-slate-200 bg-white p-4">
                     <p class="text-xs font-medium text-slate-500">Total Visitors</p>
@@ -124,9 +154,52 @@
             </div>
         </section>
 
+        @if($isRange && count($summary['by_date']) > 0)
+            <section class="mt-6" aria-label="Breakdown by date">
+                <h2 class="text-lg font-bold text-[#102044]">Breakdown by Date</h2>
+                <div class="mt-4 overflow-x-auto border-y border-slate-200 bg-white">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Date</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Bookings</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Male</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Female</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">PWD</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Pregnant</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Visitors</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach($summary['by_date'] as $visitDate => $day)
+                                <tr>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-slate-900">{{ \Carbon\Carbon::parse($visitDate)->format('D, M d, Y') }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-slate-700">{{ $day['bookings'] }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-slate-700">{{ $day['Male'] }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-slate-700">{{ $day['Female'] }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-slate-700">{{ $day['pwd'] }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-slate-700">{{ $day['pregnant'] }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-slate-900">{{ $day['visitors'] }}</td>
+                                </tr>
+                            @endforeach
+                            <tr class="bg-slate-50">
+                                <td class="px-4 py-3 text-sm font-semibold text-slate-900">Total</td>
+                                <td class="px-4 py-3 text-center text-sm font-semibold text-slate-900">{{ $bookings->count() }}</td>
+                                <td class="px-4 py-3 text-center text-sm font-semibold text-slate-900">{{ $summary['by_sex']['Male'] }}</td>
+                                <td class="px-4 py-3 text-center text-sm font-semibold text-slate-900">{{ $summary['by_sex']['Female'] }}</td>
+                                <td class="px-4 py-3 text-center text-sm font-semibold text-slate-900">{{ $summary['pwd'] }}</td>
+                                <td class="px-4 py-3 text-center text-sm font-semibold text-slate-900">{{ $summary['pregnant'] }}</td>
+                                <td class="px-4 py-3 text-right text-sm font-bold text-[#0A2472]">{{ $summary['total_visitors'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @endif
+
         @if($bookings->count() > 0)
             <section class="mt-6" aria-label="Booking details">
-                <h2 class="text-lg font-bold text-[#102044]">Approved Bookings for {{ \Carbon\Carbon::parse($summary['date'])->format('F d, Y') }}</h2>
+                <h2 class="text-lg font-bold text-[#102044]">Approved Bookings for {{ $rangeLabel }}</h2>
                 <div class="mt-4 overflow-x-auto border-y border-slate-200 bg-white">
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
@@ -134,6 +207,9 @@
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Reference</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Visitor</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">PDL</th>
+                                @if($isRange)
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Date</th>
+                                @endif
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Time Slot</th>
                                 <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Accompanying</th>
                                 <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">PWD / Pregnant</th>
@@ -149,6 +225,9 @@
                                         <div class="mt-1 flex gap-1">@include('bookings.partials.priority-badges', ['isPwd' => $booking->visitor_is_pwd, 'isPregnant' => $booking->visitor_is_pregnant])</div>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700">{{ $booking->pdl_name }}</td>
+                                    @if($isRange)
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700">{{ $booking->visit_date->format('M d, Y') }}</td>
+                                    @endif
                                     <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700">{{ $booking->time_slot }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 text-center text-sm text-slate-700">{{ $booking->accompanyingVisitors->count() }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 text-center text-sm text-slate-700">
@@ -164,7 +243,7 @@
             </section>
         @else
             <div class="mt-6 rounded-lg border border-slate-200 bg-white p-8 text-center">
-                <p class="text-sm text-slate-500">No approved bookings found for this date.</p>
+                <p class="text-sm text-slate-500">No approved bookings found for {{ $isRange ? 'this date range' : 'this date' }}.</p>
             </div>
         @endif
     </div>

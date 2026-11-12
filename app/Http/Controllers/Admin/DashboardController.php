@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -127,16 +128,28 @@ class DashboardController extends Controller
 
     public function dailySummary(Request $request): View
     {
-        $date = $request->query('date', today()->toDateString());
+        $validated = $request->validate([
+            'date' => ['nullable', 'date'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        $singleDate = $validated['date'] ?? today()->toDateString();
+        $from = Carbon::parse($validated['from'] ?? $singleDate)->toDateString();
+        $to = Carbon::parse($validated['to'] ?? $validated['from'] ?? $singleDate)->toDateString();
 
         $bookings = Booking::visibleToUser($request->user())
-            ->whereDate('visit_date', $date)
+            ->whereDate('visit_date', '>=', $from)
+            ->whereDate('visit_date', '<=', $to)
             ->where('status', 'Approved')
             ->with('accompanyingVisitors')
+            ->orderBy('visit_date')
+            ->orderBy('time_slot')
             ->get();
 
         $summary = [
-            'date' => $date,
+            'from' => $from,
+            'to' => $to,
             'total_visitors' => 0,
             'by_sex' => ['Male' => 0, 'Female' => 0],
             'by_age' => ['child' => 0, 'adult' => 0, 'senior' => 0],
@@ -147,9 +160,16 @@ class DashboardController extends Controller
             'pwd' => 0,
             'pregnant' => 0,
             'priority' => 0,
+            'by_date' => [],
         ];
 
         foreach ($bookings as $booking) {
+            $visitDate = $booking->visit_date->toDateString();
+            $summary['by_date'][$visitDate] ??= [
+                'bookings' => 0, 'visitors' => 0, 'Male' => 0, 'Female' => 0, 'pwd' => 0, 'pregnant' => 0,
+            ];
+            $summary['by_date'][$visitDate]['bookings']++;
+
             $visitors = collect([
                 [
                     'age' => $booking->visitor_age,
@@ -186,6 +206,11 @@ class DashboardController extends Controller
                 $summary['pwd'] += (int) $visitor['is_pwd'];
                 $summary['pregnant'] += (int) $visitor['is_pregnant'];
                 $summary['priority'] += (int) ($visitor['is_pwd'] || $visitor['is_pregnant']);
+
+                $summary['by_date'][$visitDate]['visitors']++;
+                $summary['by_date'][$visitDate][$visitor['sex']]++;
+                $summary['by_date'][$visitDate]['pwd'] += (int) $visitor['is_pwd'];
+                $summary['by_date'][$visitDate]['pregnant'] += (int) $visitor['is_pregnant'];
             }
         }
 
