@@ -8,10 +8,12 @@ use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -128,6 +130,34 @@ class DashboardController extends Controller
 
     public function dailySummary(Request $request): View
     {
+        [$summary, $bookings] = $this->buildVisitationSummary($request);
+
+        return view('admin.daily-summary', compact('summary', 'bookings'));
+    }
+
+    public function exportDailySummary(Request $request): StreamedResponse
+    {
+        [$summary, $bookings] = $this->buildVisitationSummary($request);
+
+        $filename = "visitation-summary_{$summary['from']}_to_{$summary['to']}.csv";
+
+        return response()->streamDownload(function () use ($summary, $bookings): void {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+
+            foreach ($this->visitationSummaryCsvRows($summary, $bookings) as $row) {
+                fputcsv($output, array_map($this->escapeCsvValue(...), $row));
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * @return array{0: array<string, mixed>, 1: Collection<int, Booking>}
+     */
+    private function buildVisitationSummary(Request $request): array
+    {
         $validated = $request->validate([
             'date' => ['nullable', 'date'],
             'from' => ['nullable', 'date'],
@@ -142,7 +172,7 @@ class DashboardController extends Controller
             ->whereDate('visit_date', '>=', $from)
             ->whereDate('visit_date', '<=', $to)
             ->where('status', 'Approved')
-            ->with('accompanyingVisitors')
+            ->with(['accompanyingVisitors', 'facility'])
             ->orderBy('visit_date')
             ->orderBy('time_slot')
             ->get();
@@ -214,6 +244,99 @@ class DashboardController extends Controller
             }
         }
 
-        return view('admin.daily-summary', compact('summary', 'bookings'));
+        return [$summary, $bookings];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @param  Collection<int, Booking>  $bookings
+     * @return list<list<string|int>>
+     */
+    private function visitationSummaryCsvRows(array $summary, Collection $bookings): array
+    {
+        $yesNo = fn (bool $value): string => $value ? 'Yes' : 'No';
+
+        $rows = [
+            ['Visitation Summary Report'],
+            ['From', $summary['from']],
+            ['To', $summary['to']],
+            ['Generated', now()->format('Y-m-d H:i')],
+            [],
+            ['Summary'],
+            ['Approved bookings', $bookings->count()],
+            ['Total visitors', $summary['total_visitors']],
+            ['Male', $summary['by_sex']['Male']],
+            ['Female', $summary['by_sex']['Female']],
+            ['Children (below 18)', $summary['by_age']['child']],
+            ['Adults (18-59)', $summary['by_age']['adult']],
+            ['Seniors (60+)', $summary['by_age']['senior']],
+            ['Persons with Disability (PWD)', $summary['pwd']],
+            ['Pregnant', $summary['pregnant']],
+            ['Total priority visitors', $summary['priority']],
+            [],
+            ['Breakdown by Date'],
+            ['Date', 'Bookings', 'Male', 'Female', 'PWD', 'Pregnant', 'Visitors'],
+        ];
+
+        foreach ($summary['by_date'] as $date => $day) {
+            $rows[] = [$date, $day['bookings'], $day['Male'], $day['Female'], $day['pwd'], $day['pregnant'], $day['visitors']];
+        }
+
+        $rows[] = [
+            'Total',
+            $bookings->count(),
+            $summary['by_sex']['Male'],
+            $summary['by_sex']['Female'],
+            $summary['pwd'],
+            $summary['pregnant'],
+            $summary['total_visitors'],
+        ];
+        $rows[] = [];
+        $rows[] = ['Visitors'];
+        $rows[] = ['Date', 'Time Slot', 'Reference', 'Visitor', 'Type', 'Sex', 'Age', 'PWD', 'Pregnant', 'PDL', 'Relationship to PDL', 'Facility'];
+
+        foreach ($bookings as $booking) {
+            $bookingColumns = [$booking->visit_date->toDateString(), $booking->time_slot, $booking->reference_code];
+            $facilityName = $booking->facility?->name ?? '';
+
+            $rows[] = [
+                ...$bookingColumns,
+                $booking->visitor_full_name,
+                'Primary',
+                $booking->visitor_sex,
+                $booking->visitor_age,
+                $yesNo($booking->visitor_is_pwd),
+                $yesNo($booking->visitor_is_pregnant),
+                $booking->pdl_full_name,
+                $booking->relationship_to_pdl,
+                $facilityName,
+            ];
+
+            foreach ($booking->accompanyingVisitors as $accompanying) {
+                $rows[] = [
+                    ...$bookingColumns,
+                    $accompanying->full_name,
+                    'Accompanying',
+                    $accompanying->sex,
+                    $accompanying->age,
+                    $yesNo($accompanying->is_pwd),
+                    $yesNo($accompanying->is_pregnant),
+                    $booking->pdl_full_name,
+                    $accompanying->relationship_to_pdl,
+                    $facilityName,
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    private function escapeCsvValue(string|int|null $value): string|int
+    {
+        if (is_string($value) && preg_match('/^[=+\-@\t\r]/', $value) === 1) {
+            return "'".$value;
+        }
+
+        return $value ?? '';
     }
 }
