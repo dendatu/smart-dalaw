@@ -9,7 +9,7 @@
             <div>
                 <p class="text-xs font-semibold uppercase text-[#0A2472]">Reports</p>
                 <h1 class="mt-1 text-2xl font-bold text-[#102044]">Daily Visitation Summary</h1>
-                <p class="mt-2 text-sm text-slate-600">View visitor statistics grouped by sex and age category.</p>
+                <p class="mt-2 text-sm text-slate-600">View visitor statistics grouped by sex, age category, and priority status (PWD / pregnant).</p>
             </div>
             <form action="{{ route('admin.daily-summary') }}" method="GET" class="flex items-center gap-2">
                 <input type="date" name="date" value="{{ $summary['date'] }}" class="min-h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
@@ -59,6 +59,27 @@
                     <p class="text-xs font-medium text-amber-800">Senior Citizens (60+)</p>
                     <p class="mt-2 text-2xl font-bold text-amber-900">{{ $summary['by_age']['senior'] }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ number_format(($summary['by_age']['senior'] / max($summary['total_visitors'], 1)) * 100, 1) }}% of total</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="mt-6" aria-label="Priority visitors">
+            <h2 class="text-lg font-bold text-[#102044]">Priority Visitors</h2>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <article class="rounded-md border border-indigo-200 bg-white p-4">
+                    <p class="text-xs font-medium text-indigo-800">Persons with Disability (PWD)</p>
+                    <p class="mt-2 text-2xl font-bold text-indigo-900">{{ $summary['pwd'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ number_format(($summary['pwd'] / max($summary['total_visitors'], 1)) * 100, 1) }}% of total</p>
+                </article>
+                <article class="rounded-md border border-rose-200 bg-white p-4">
+                    <p class="text-xs font-medium text-rose-800">Pregnant Visitors</p>
+                    <p class="mt-2 text-2xl font-bold text-rose-900">{{ $summary['pregnant'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ number_format(($summary['pregnant'] / max($summary['total_visitors'], 1)) * 100, 1) }}% of total</p>
+                </article>
+                <article class="rounded-md border border-slate-200 bg-white p-4">
+                    <p class="text-xs font-medium text-slate-500">Total Priority Visitors</p>
+                    <p class="mt-2 text-2xl font-bold text-[#102044]">{{ $summary['priority'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">PWD and/or pregnant</p>
                 </article>
             </div>
         </section>
@@ -115,6 +136,7 @@
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">PDL</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Time Slot</th>
                                 <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Accompanying</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">PWD / Pregnant</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -124,10 +146,16 @@
                                     <td class="whitespace-nowrap px-4 py-4">
                                         <p class="text-sm font-medium text-slate-900">{{ $booking->visitor_full_name }}</p>
                                         <p class="mt-1 text-xs text-slate-500">{{ $booking->visitor_age }} yrs · {{ $booking->visitor_sex }}</p>
+                                        <div class="mt-1 flex gap-1">@include('bookings.partials.priority-badges', ['isPwd' => $booking->visitor_is_pwd, 'isPregnant' => $booking->visitor_is_pregnant])</div>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700">{{ $booking->pdl_name }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700">{{ $booking->time_slot }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 text-center text-sm text-slate-700">{{ $booking->accompanyingVisitors->count() }}</td>
+                                    <td class="whitespace-nowrap px-4 py-4 text-center text-sm text-slate-700">
+                                        {{ (int) $booking->visitor_is_pwd + $booking->accompanyingVisitors->where('is_pwd', true)->count() }}
+                                        /
+                                        {{ (int) $booking->visitor_is_pregnant + $booking->accompanyingVisitors->where('is_pregnant', true)->count() }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

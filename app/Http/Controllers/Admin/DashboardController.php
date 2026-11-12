@@ -144,6 +144,9 @@ class DashboardController extends Controller
                 'Male' => ['child' => 0, 'adult' => 0, 'senior' => 0],
                 'Female' => ['child' => 0, 'adult' => 0, 'senior' => 0],
             ],
+            'pwd' => 0,
+            'pregnant' => 0,
+            'priority' => 0,
         ];
 
         foreach ($bookings as $booking) {
@@ -151,6 +154,8 @@ class DashboardController extends Controller
                 [
                     'age' => $booking->visitor_age,
                     'sex' => $booking->visitor_sex,
+                    'is_pwd' => $booking->visitor_is_pwd,
+                    'is_pregnant' => $booking->visitor_is_pregnant,
                 ],
             ]);
 
@@ -158,6 +163,8 @@ class DashboardController extends Controller
                 $visitors->push([
                     'age' => $accompanying->age,
                     'sex' => $accompanying->sex,
+                    'is_pwd' => $accompanying->is_pwd,
+                    'is_pregnant' => $accompanying->is_pregnant,
                 ]);
             }
 
@@ -175,6 +182,10 @@ class DashboardController extends Controller
 
                 $summary['by_age'][$ageCategory]++;
                 $summary['by_sex_and_age'][$visitor['sex']][$ageCategory]++;
+
+                $summary['pwd'] += (int) $visitor['is_pwd'];
+                $summary['pregnant'] += (int) $visitor['is_pregnant'];
+                $summary['priority'] += (int) ($visitor['is_pwd'] || $visitor['is_pregnant']);
             }
         }
 

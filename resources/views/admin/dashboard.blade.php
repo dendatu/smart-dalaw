@@ -113,6 +113,9 @@
                             <td class="whitespace-nowrap px-4 py-4">
                                 <p class="text-sm font-medium text-slate-900">{{ $booking->visitor_full_name }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $booking->visitor_contact }}</p>
+                                @if($booking->visitor_is_pwd || $booking->visitor_is_pregnant)
+                                    <div class="mt-1 flex gap-1">@include('bookings.partials.priority-badges', ['isPwd' => $booking->visitor_is_pwd, 'isPregnant' => $booking->visitor_is_pregnant])</div>
+                                @endif
                             </td>
                             <td class="whitespace-nowrap px-4 py-4">
                                 <p class="text-sm text-slate-800">{{ $booking->pdl_name }}</p>
