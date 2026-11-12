@@ -129,11 +129,22 @@ test('admins can update the declarations when editing a booking', function () {
         'status' => 'Pending',
         'visitor_is_pwd' => true,
     ]);
+    $booking->accompanyingVisitors()->create([
+        'full_name' => 'Ana Santos',
+        'age' => 30,
+        'sex' => 'Female',
+        'is_pregnant' => true,
+        'id_type' => 'Passport',
+        'id_number' => 'P7654321',
+        'relationship_to_pdl' => 'Sibling',
+    ]);
 
     $this->actingAs($admin)
         ->get(route('admin.bookings.edit', $booking))
         ->assertOk()
-        ->assertSee('name="visitor_is_pwd"', false);
+        ->assertSee('name="visitor_is_pwd"', false)
+        ->assertSee('<option value="Female" selected>Female</option>', false)
+        ->assertSee('name="accompanying_visitors[0][is_pregnant]" value="1" checked', false);
 
     $this->actingAs($admin)
         ->put(route('admin.bookings.update', $booking), priorityBookingPayload($facility, [

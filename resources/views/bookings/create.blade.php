@@ -294,6 +294,7 @@
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Person you are visiting</dt><dd id="review_pdl" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Visitor</dt><dd id="review_visitor" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Priority declaration</dt><dd id="review_priority" class="text-sm font-medium text-slate-900"></dd></div>
+                            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Accompanying visitors</dt><dd id="review_companions" class="text-sm font-medium text-slate-900 sm:text-right"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Valid ID</dt><dd id="review_id" class="text-sm font-medium text-slate-900"></dd></div>
                             <div class="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between"><dt class="text-xs text-slate-500">Agreements</dt><dd class="text-sm font-medium text-slate-900">Terms and Privacy Notice acknowledged</dd></div>
                         </dl>
@@ -334,6 +335,7 @@
         const VISITING_SCHEDULE = @json($visitingSchedule);
         const MIN_VISIT_DATE = @json($minVisitDate); // earliest bookable date (tomorrow)
         const PREVIOUS_TIME_SLOT = @json(old('time_slot'));
+        const PREVIOUS_ACCOMPANYING_VISITORS = @json(array_values(old('accompanying_visitors', [])));
         const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         const bookingForm = document.getElementById('bookingForm');
@@ -430,6 +432,12 @@
                 document.getElementById('visitor_is_pwd').checked ? 'Person with Disability (PWD)' : null,
                 document.getElementById('visitor_is_pregnant').checked ? 'Pregnant' : null,
             ].filter(Boolean).join(', ') || 'None';
+            const companions = [...accompanyingVisitorsContainer.querySelectorAll('[data-accompanying-index]')].map((row) => {
+                const field = (name) => row.querySelector(`[name$="[${name}]"]`);
+                const flags = [field('is_pwd').checked ? 'PWD' : null, field('is_pregnant').checked ? 'Pregnant' : null].filter(Boolean);
+                return field('full_name').value + (flags.length ? ` (${flags.join(', ')})` : '');
+            });
+            document.getElementById('review_companions').textContent = companions.join('; ') || 'None';
             document.getElementById('review_id').textContent = `${selectedLabel(document.getElementById('visitor_id_type'))} · ${document.getElementById('visitor_id_number').value}`;
         }
 
@@ -652,11 +660,41 @@
             return div;
         }
 
-        addAccompanyingVisitorBtn.addEventListener('click', () => {
+        function syncPregnancyCheckbox(sexSelect, pregnantCheckbox) {
+            const isMale = sexSelect.value === 'Male';
+            pregnantCheckbox.disabled = isMale;
+            if (isMale) {
+                pregnantCheckbox.checked = false;
+            }
+        }
+
+        function addAccompanyingVisitor(values = {}) {
             const form = createAccompanyingVisitorForm(accompanyingVisitorCount);
+            form.querySelectorAll('[name^="accompanying_visitors["]').forEach((input) => {
+                const key = input.name.match(/\[(\w+)\]$/)[1];
+                if (input.type === 'checkbox') {
+                    input.checked = ['1', 1, true, 'on'].includes(values[key]);
+                } else if (values[key] !== undefined && values[key] !== null) {
+                    input.value = values[key];
+                }
+            });
+            syncPregnancyCheckbox(form.querySelector('[name$="[sex]"]'), form.querySelector('[name$="[is_pregnant]"]'));
             accompanyingVisitorsContainer.appendChild(form);
             accompanyingVisitorCount++;
+        }
+
+        addAccompanyingVisitorBtn.addEventListener('click', () => addAccompanyingVisitor());
+
+        accompanyingVisitorsContainer.addEventListener('change', (e) => {
+            if (e.target.matches('[name$="[sex]"]')) {
+                const row = e.target.closest('[data-accompanying-index]');
+                syncPregnancyCheckbox(e.target, row.querySelector('[name$="[is_pregnant]"]'));
+            }
         });
+
+        const visitorSexSelect = document.getElementById('visitor_sex');
+        const visitorPregnantCheckbox = document.getElementById('visitor_is_pregnant');
+        visitorSexSelect.addEventListener('change', () => syncPregnancyCheckbox(visitorSexSelect, visitorPregnantCheckbox));
 
         accompanyingVisitorsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-accompanying-visitor')) {
@@ -685,6 +723,9 @@
         if (facilitySelect.value) {
             updateFacilityBrand();
         }
+
+        PREVIOUS_ACCOMPANYING_VISITORS.forEach((visitor) => addAccompanyingVisitor(visitor));
+        syncPregnancyCheckbox(visitorSexSelect, visitorPregnantCheckbox);
 
         applyDateRules(PREVIOUS_TIME_SLOT || '');
         showBookingStep(activeStep);

@@ -155,8 +155,8 @@
                                     <label class="mb-1.5 block text-xs font-semibold text-slate-700">Sex</label>
                                     <select name="accompanying_visitors[{{ $index }}][sex]" required class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0A2472] focus:outline-none focus:ring-2 focus:ring-blue-100">
                                         <option value="">Select sex</option>
-                                        <option value="Male" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Male')">Male</option>
-                                        <option value="Female" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Female')">Female</option>
+                                        <option value="Male" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Male')>Male</option>
+                                        <option value="Female" @selected(old("accompanying_visitors.{$index}.sex", $visitor->sex) === 'Female')>Female</option>
                                     </select>
                                 </div>
                                 <div class="flex flex-wrap gap-x-5 gap-y-2 sm:col-span-2">
